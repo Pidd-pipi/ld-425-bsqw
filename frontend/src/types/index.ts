@@ -4,6 +4,7 @@ export * from './design'
 export * from './material'
 export * from './budget'
 export * from './construction'
+export * from './change'
 
 export interface User {
   id: number

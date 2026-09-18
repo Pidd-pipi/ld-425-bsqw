@@ -62,6 +62,13 @@ export const AcceptanceStatus = {
 } as const
 export type AcceptanceStatus = (typeof AcceptanceStatus)[keyof typeof AcceptanceStatus]
 
+export const ChangeOrderStatus = {
+  Pending: 'Pending',
+  Approved: 'Approved',
+  Rejected: 'Rejected',
+} as const
+export type ChangeOrderStatus = (typeof ChangeOrderStatus)[keyof typeof ChangeOrderStatus]
+
 export const Role = {
   Admin: 'Admin',
   Designer: 'Designer',

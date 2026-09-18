@@ -14,18 +14,19 @@ import (
 
 // Deps 路由装配依赖。
 type Deps struct {
-	Config     *config.Config
-	Logger     *slog.Logger
-	UserSvc    service.UserService
-	AuditSvc   service.AuditService
-	AuditRepo  repository.AuditLogRepository
-	ProjectH   *handler.ProjectHandler
-	DesignH    *handler.DesignHandler
-	MaterialH  *handler.MaterialHandler
-	BudgetH    *handler.BudgetHandler
+	Config        *config.Config
+	Logger        *slog.Logger
+	UserSvc       service.UserService
+	AuditSvc      service.AuditService
+	AuditRepo     repository.AuditLogRepository
+	ProjectH      *handler.ProjectHandler
+	DesignH       *handler.DesignHandler
+	MaterialH     *handler.MaterialHandler
+	BudgetH       *handler.BudgetHandler
 	ConstructionH *handler.ConstructionHandler
-	AuditH     *handler.AuditHandler
-	UploadH    *handler.UploadHandler
+	ChangeOrderH  *handler.ChangeOrderHandler
+	AuditH        *handler.AuditHandler
+	UploadH       *handler.UploadHandler
 }
 
 // New 构建并配置 Gin 引擎。
@@ -56,6 +57,7 @@ func New(deps Deps) *gin.Engine {
 	registerMaterialRoutes(api, deps.MaterialH, auth, middleware.RBACMiddleware)
 	registerBudgetRoutes(api, deps.BudgetH, auth, middleware.RBACMiddleware)
 	registerConstructionRoutes(api, deps.ConstructionH, auth, middleware.RBACMiddleware)
+	registerChangeOrderRoutes(api, deps.ChangeOrderH, auth, middleware.RBACMiddleware)
 
 	uploadGroup := api.Group("/upload", auth, middleware.UploadMiddleware(deps.Config.Upload))
 	uploadGroup.POST("", deps.UploadH.Upload)

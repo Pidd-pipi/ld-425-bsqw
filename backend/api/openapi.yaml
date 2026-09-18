@@ -71,6 +71,57 @@ paths:
       responses:
         '200':
           description: 成功
+  /change-orders:
+    get:
+      summary: 变更签证列表（可按 project_id/node_id/status 过滤）
+      tags: [ChangeOrder]
+      parameters:
+        - name: project_id
+          in: query
+          schema: { type: integer }
+        - name: node_id
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: string, enum: [Pending, Approved, Rejected] }
+      responses:
+        '200':
+          description: 成功
+    post:
+      summary: 施工方提交变更签证（同一节点仅允许一个待审批变更）
+      tags: [ChangeOrder]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChangeOrderRequest'
+      responses:
+        '200':
+          description: 提交成功
+        '409':
+          description: 该节点已存在待审批变更
+  /change-orders/{id}/review:
+    put:
+      summary: 项目经理或业主审批变更（批准/驳回；超额时整单拒绝）
+      tags: [ChangeOrder]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewChangeOrderRequest'
+      responses:
+        '200':
+          description: 审批成功
+        '409':
+          description: 变更单已审批，重复或并发审批仅首个成功
 components:
   schemas:
     LoginRequest:
@@ -108,3 +159,18 @@ components:
         house_type: { type: string }
         decor_style: { type: string }
         status: { type: string }
+    CreateChangeOrderRequest:
+      type: object
+      required: [project_id, node_id, amount, reason]
+      properties:
+        project_id: { type: integer }
+        node_id: { type: integer }
+        amount: { type: number, format: double, description: 增项金额，必须大于 0 }
+        schedule_impact: { type: integer, description: 工期顺延天数，默认 0 }
+        reason: { type: string, description: 变更事由 }
+    ReviewChangeOrderRequest:
+      type: object
+      required: [approved]
+      properties:
+        approved: { type: boolean, description: true 批准 / false 驳回 }
+        comment: { type: string, description: 审批意见 }

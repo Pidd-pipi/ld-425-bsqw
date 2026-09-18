@@ -62,6 +62,13 @@ const (
 	AcceptanceStatusFailed  = "Failed"
 )
 
+// ChangeOrderStatus 变更签证单状态。
+const (
+	ChangeOrderStatusPending  = "Pending"
+	ChangeOrderStatusApproved = "Approved"
+	ChangeOrderStatusRejected = "Rejected"
+)
+
 // Role 系统角色。
 const (
 	RoleAdmin          = "Admin"
@@ -93,8 +100,9 @@ var (
 	ConstructionStatuses = []string{
 		ConstructionStatusPending, ConstructionStatusInProgress, ConstructionStatusCompleted, ConstructionStatusDelayed,
 	}
-	AcceptanceStatuses = []string{AcceptanceStatusPending, AcceptanceStatusPassed, AcceptanceStatusFailed}
-	Roles              = []string{RoleAdmin, RoleDesigner, RoleContractor, RoleOwner, RoleProjectManager}
+	AcceptanceStatuses  = []string{AcceptanceStatusPending, AcceptanceStatusPassed, AcceptanceStatusFailed}
+	ChangeOrderStatuses = []string{ChangeOrderStatusPending, ChangeOrderStatusApproved, ChangeOrderStatusRejected}
+	Roles               = []string{RoleAdmin, RoleDesigner, RoleContractor, RoleOwner, RoleProjectManager}
 )
 
 // Contains 判断字符串是否在集合内。

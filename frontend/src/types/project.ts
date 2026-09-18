@@ -12,6 +12,8 @@ export interface RenovationProject {
   foreman_id: number
   status: ProjectStatus
   contract_amount: number
+  approved_changes: number
+  schedule_delta: number
   start_date: string | null
   expected_end_date: string | null
   created_at: string

@@ -51,6 +51,8 @@ type ProjectDTO struct {
 	ForemanID       uint       `json:"foreman_id"`
 	Status          string     `json:"status"`
 	ContractAmount  float64    `json:"contract_amount"`
+	ApprovedChanges float64    `json:"approved_changes"`
+	ScheduleDelta   int        `json:"schedule_delta"`
 	StartDate       *time.Time `json:"start_date"`
 	ExpectedEndDate *time.Time `json:"expected_end_date"`
 	CreatedAt       time.Time  `json:"created_at"`

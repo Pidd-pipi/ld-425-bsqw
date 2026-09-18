@@ -20,6 +20,8 @@ func toProjectDTO(project *model.RenovationProject) dto.ProjectDTO {
 		ForemanID:       project.ForemanID,
 		Status:          project.Status,
 		ContractAmount:  project.ContractAmount,
+		ApprovedChanges: project.ApprovedChanges,
+		ScheduleDelta:   project.ScheduleDelta,
 		StartDate:       project.StartDate,
 		ExpectedEndDate: project.ExpectedEndDate,
 		CreatedAt:       project.CreatedAt,
@@ -96,6 +98,24 @@ func toConstructionDTO(node *model.ConstructionNode) dto.ConstructionDTO {
 	}
 }
 
+func toChangeOrderDTO(order *model.ChangeOrder) dto.ChangeOrderDTO {
+	return dto.ChangeOrderDTO{
+		ID:             order.ID,
+		ProjectID:      order.ProjectID,
+		NodeID:         order.NodeID,
+		Amount:         order.Amount,
+		ScheduleImpact: order.ScheduleImpact,
+		Reason:         order.Reason,
+		Status:         order.Status,
+		ApplicantID:    order.ApplicantID,
+		ReviewerID:     order.ReviewerID,
+		ReviewComment:  order.ReviewComment,
+		ReviewedAt:     order.ReviewedAt,
+		CreatedAt:      order.CreatedAt,
+		UpdatedAt:      order.UpdatedAt,
+	}
+}
+
 func parseStringSlice(raw string) []string {
 	if raw == "" || raw == "null" {
 		return []string{}
@@ -143,6 +163,14 @@ func toConstructionDTOList(nodes []model.ConstructionNode) []dto.ConstructionDTO
 	out := make([]dto.ConstructionDTO, 0, len(nodes))
 	for _, item := range nodes {
 		out = append(out, toConstructionDTO(&item))
+	}
+	return out
+}
+
+func toChangeOrderDTOList(orders []model.ChangeOrder) []dto.ChangeOrderDTO {
+	out := make([]dto.ChangeOrderDTO, 0, len(orders))
+	for _, item := range orders {
+		out = append(out, toChangeOrderDTO(&item))
 	}
 	return out
 }

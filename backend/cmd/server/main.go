@@ -43,6 +43,7 @@ func main() {
 	materialRepo := repository.NewMaterialRepository(db)
 	budgetRepo := repository.NewBudgetRepository(db)
 	constructionRepo := repository.NewConstructionRepository(db)
+	changeOrderRepo := repository.NewChangeOrderRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	auditRepo := repository.NewAuditLogRepository(db)
 
@@ -54,30 +55,32 @@ func main() {
 	materialSvc := service.NewMaterialService(materialRepo, log)
 	budgetSvc := service.NewBudgetService(budgetRepo, log)
 	constructionSvc := service.NewConstructionService(constructionRepo, log)
+	changeOrderSvc := service.NewChangeOrderService(changeOrderRepo, projectRepo, constructionRepo, log)
 
 	if err := userSvc.SeedIfEmpty(); err != nil {
 		log.Error("seed users failed", "error", err)
 		os.Exit(1)
 	}
-	if err := seedDemoData(projectSvc, designSvc, materialSvc, budgetSvc, constructionSvc, log); err != nil {
+	if err := seedDemoData(projectSvc, designSvc, materialSvc, budgetSvc, constructionSvc, changeOrderSvc, log); err != nil {
 		log.Error("seed demo data failed", "error", err)
 		os.Exit(1)
 	}
 
 	// 装配处理器与路由。
 	engine := router.New(router.Deps{
-		Config:         cfg,
-		Logger:         log,
-		UserSvc:        userSvc,
-		AuditSvc:       auditSvc,
-		AuditRepo:      auditRepo,
-		ProjectH:       handler.NewProjectHandler(projectSvc),
-		DesignH:        handler.NewDesignHandler(designSvc),
-		MaterialH:      handler.NewMaterialHandler(materialSvc),
-		BudgetH:        handler.NewBudgetHandler(budgetSvc),
-		ConstructionH:  handler.NewConstructionHandler(constructionSvc),
-		AuditH:         handler.NewAuditHandler(auditSvc),
-		UploadH:        handler.NewUploadHandler(),
+		Config:        cfg,
+		Logger:        log,
+		UserSvc:       userSvc,
+		AuditSvc:      auditSvc,
+		AuditRepo:     auditRepo,
+		ProjectH:      handler.NewProjectHandler(projectSvc),
+		DesignH:       handler.NewDesignHandler(designSvc),
+		MaterialH:     handler.NewMaterialHandler(materialSvc),
+		BudgetH:       handler.NewBudgetHandler(budgetSvc),
+		ConstructionH: handler.NewConstructionHandler(constructionSvc),
+		ChangeOrderH:  handler.NewChangeOrderHandler(changeOrderSvc),
+		AuditH:        handler.NewAuditHandler(auditSvc),
+		UploadH:       handler.NewUploadHandler(),
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
@@ -118,6 +121,7 @@ func migrate(db *gorm.DB) error {
 		&model.MaterialItem{},
 		&model.BudgetItem{},
 		&model.ConstructionNode{},
+		&model.ChangeOrder{},
 		&model.AuditLog{},
 	)
 }
@@ -128,6 +132,7 @@ func seedDemoData(
 	materialSvc service.MaterialService,
 	budgetSvc service.BudgetService,
 	constructionSvc service.ConstructionService,
+	changeOrderSvc service.ChangeOrderService,
 	log *slog.Logger,
 ) error {
 	_, total, err := projectSvc.List("", "", 1, 1)
@@ -213,6 +218,23 @@ func seedDemoData(
 			ProjectID: project.ID, Name: item.name, PlannedStartDate: &item.start, PlannedEndDate: &item.end,
 		}); err != nil {
 			return fmt.Errorf("seed construction %s: %w", item.name, err)
+		}
+	}
+
+	// 种子一条水电节点的待审批变更签证，便于演示提交与审批闭环。
+	changeNodes, err := constructionSvc.ListByProjectID(project.ID)
+	if err != nil {
+		return fmt.Errorf("list seed construction nodes: %w", err)
+	}
+	if len(changeNodes) > 1 {
+		if _, err := changeOrderSvc.Submit(&dto.CreateChangeOrderRequest{
+			ProjectID:      project.ID,
+			NodeID:         changeNodes[1].ID,
+			Amount:         8600,
+			ScheduleImpact: 3,
+			Reason:         "水电阶段新增厨卫回路与点位改造",
+		}, 3); err != nil {
+			return fmt.Errorf("seed change order: %w", err)
 		}
 	}
 	log.Info("seeded demo project", "project", project.Name, "project_id", project.ID)
