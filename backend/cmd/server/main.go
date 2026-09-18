@@ -43,8 +43,10 @@ func main() {
 	materialRepo := repository.NewMaterialRepository(db)
 	budgetRepo := repository.NewBudgetRepository(db)
 	constructionRepo := repository.NewConstructionRepository(db)
+	changeOrderRepo := repository.NewChangeOrderRepository(db)
 	userRepo := repository.NewUserRepository(db)
 	auditRepo := repository.NewAuditLogRepository(db)
+	txManager := repository.NewTransactionManager(db)
 
 	// 装配服务层。
 	userSvc := service.NewUserService(userRepo, cfg.JWT, log)
@@ -54,6 +56,7 @@ func main() {
 	materialSvc := service.NewMaterialService(materialRepo, log)
 	budgetSvc := service.NewBudgetService(budgetRepo, log)
 	constructionSvc := service.NewConstructionService(constructionRepo, log)
+	changeOrderSvc := service.NewChangeOrderService(changeOrderRepo, projectRepo, budgetRepo, constructionRepo, txManager, log)
 
 	if err := userSvc.SeedIfEmpty(); err != nil {
 		log.Error("seed users failed", "error", err)
@@ -66,18 +69,19 @@ func main() {
 
 	// 装配处理器与路由。
 	engine := router.New(router.Deps{
-		Config:         cfg,
-		Logger:         log,
-		UserSvc:        userSvc,
-		AuditSvc:       auditSvc,
-		AuditRepo:      auditRepo,
-		ProjectH:       handler.NewProjectHandler(projectSvc),
-		DesignH:        handler.NewDesignHandler(designSvc),
-		MaterialH:      handler.NewMaterialHandler(materialSvc),
-		BudgetH:        handler.NewBudgetHandler(budgetSvc),
-		ConstructionH:  handler.NewConstructionHandler(constructionSvc),
-		AuditH:         handler.NewAuditHandler(auditSvc),
-		UploadH:        handler.NewUploadHandler(),
+		Config:        cfg,
+		Logger:        log,
+		UserSvc:       userSvc,
+		AuditSvc:      auditSvc,
+		AuditRepo:     auditRepo,
+		ProjectH:      handler.NewProjectHandler(projectSvc),
+		DesignH:       handler.NewDesignHandler(designSvc),
+		MaterialH:     handler.NewMaterialHandler(materialSvc),
+		BudgetH:       handler.NewBudgetHandler(budgetSvc),
+		ConstructionH: handler.NewConstructionHandler(constructionSvc),
+		ChangeOrderH:  handler.NewChangeOrderHandler(changeOrderSvc),
+		AuditH:        handler.NewAuditHandler(auditSvc),
+		UploadH:       handler.NewUploadHandler(),
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Server.Port)
@@ -111,15 +115,39 @@ func connectDB(cfg *config.Config, log *slog.Logger) (*gorm.DB, error) {
 }
 
 func migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
+	if err := db.AutoMigrate(
 		&model.User{},
 		&model.RenovationProject{},
 		&model.DesignPhase{},
 		&model.MaterialItem{},
 		&model.BudgetItem{},
 		&model.ConstructionNode{},
+		&model.ChangeOrder{},
 		&model.AuditLog{},
-	)
+	); err != nil {
+		return err
+	}
+	return ensureChangeOrderPendingIndex(db)
+}
+
+// ensureChangeOrderPendingIndex 通过生成列唯一索引保证同一节点仅有一条待审批变更。
+func ensureChangeOrderPendingIndex(db *gorm.DB) error {
+	var count int64
+	if err := db.Raw(`SELECT COUNT(*) FROM information_schema.COLUMNS
+		WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'change_orders' AND COLUMN_NAME = 'pending_node_key'`).Scan(&count).Error; err != nil {
+		return fmt.Errorf("check pending_node_key column: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+	if err := db.Exec(`ALTER TABLE change_orders
+		ADD COLUMN pending_node_key BIGINT UNSIGNED GENERATED ALWAYS AS (IF(status = 'Pending', node_id, NULL)) STORED`).Error; err != nil {
+		return fmt.Errorf("add pending_node_key column: %w", err)
+	}
+	if err := db.Exec(`CREATE UNIQUE INDEX uk_change_orders_pending_node ON change_orders (pending_node_key)`).Error; err != nil {
+		return fmt.Errorf("create pending node unique index: %w", err)
+	}
+	return nil
 }
 
 func seedDemoData(

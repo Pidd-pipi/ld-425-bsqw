@@ -9,21 +9,22 @@ import (
 
 func toProjectDTO(project *model.RenovationProject) dto.ProjectDTO {
 	return dto.ProjectDTO{
-		ID:              project.ID,
-		Name:            project.Name,
-		HouseType:       project.HouseType,
-		Area:            project.Area,
-		DecorStyle:      project.DecorStyle,
-		Address:         project.Address,
-		OwnerID:         project.OwnerID,
-		DesignerID:      project.DesignerID,
-		ForemanID:       project.ForemanID,
-		Status:          project.Status,
-		ContractAmount:  project.ContractAmount,
-		StartDate:       project.StartDate,
-		ExpectedEndDate: project.ExpectedEndDate,
-		CreatedAt:       project.CreatedAt,
-		UpdatedAt:       project.UpdatedAt,
+		ID:                   project.ID,
+		Name:                 project.Name,
+		HouseType:            project.HouseType,
+		Area:                 project.Area,
+		DecorStyle:           project.DecorStyle,
+		Address:              project.Address,
+		OwnerID:              project.OwnerID,
+		DesignerID:           project.DesignerID,
+		ForemanID:            project.ForemanID,
+		Status:               project.Status,
+		ContractAmount:       project.ContractAmount,
+		ApprovedChangeAmount: project.ApprovedChangeAmount,
+		StartDate:            project.StartDate,
+		ExpectedEndDate:      project.ExpectedEndDate,
+		CreatedAt:            project.CreatedAt,
+		UpdatedAt:            project.UpdatedAt,
 	}
 }
 
@@ -143,6 +144,32 @@ func toConstructionDTOList(nodes []model.ConstructionNode) []dto.ConstructionDTO
 	out := make([]dto.ConstructionDTO, 0, len(nodes))
 	for _, item := range nodes {
 		out = append(out, toConstructionDTO(&item))
+	}
+	return out
+}
+
+func toChangeOrderDTO(order *model.ChangeOrder) dto.ChangeOrderDTO {
+	return dto.ChangeOrderDTO{
+		ID:                 order.ID,
+		ProjectID:          order.ProjectID,
+		NodeID:             order.NodeID,
+		Title:              order.Title,
+		Amount:             order.Amount,
+		ScheduleImpactDays: order.ScheduleImpactDays,
+		Status:             order.Status,
+		SubmittedBy:        order.SubmittedBy,
+		ReviewedBy:         order.ReviewedBy,
+		ReviewNote:         order.ReviewNote,
+		ReviewedAt:         order.ReviewedAt,
+		CreatedAt:          order.CreatedAt,
+		UpdatedAt:          order.UpdatedAt,
+	}
+}
+
+func toChangeOrderDTOList(orders []model.ChangeOrder) []dto.ChangeOrderDTO {
+	out := make([]dto.ChangeOrderDTO, 0, len(orders))
+	for _, item := range orders {
+		out = append(out, toChangeOrderDTO(&item))
 	}
 	return out
 }

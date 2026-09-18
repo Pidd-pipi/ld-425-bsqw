@@ -6,6 +6,7 @@ import (
 
 	"github.com/home-renovation/platform/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // BudgetRepository 预算项仓储接口。
@@ -14,8 +15,11 @@ type BudgetRepository interface {
 	GetByID(id uint) (*model.BudgetItem, error)
 	List(filter BudgetFilter, page, pageSize int) ([]model.BudgetItem, int64, error)
 	ListByProjectID(projectID uint) ([]model.BudgetItem, error)
+	SumActualByProjectID(projectID uint) (float64, error)
+	SumActualByProjectIDForUpdate(projectID uint) (float64, error)
 	Update(item *model.BudgetItem) error
 	Delete(id uint) error
+	WithTx(tx *gorm.DB) BudgetRepository
 }
 
 // BudgetFilter 预算查询过滤条件。
@@ -31,6 +35,11 @@ type budgetRepository struct {
 // NewBudgetRepository 构造预算仓储。
 func NewBudgetRepository(db *gorm.DB) BudgetRepository {
 	return &budgetRepository{db: db}
+}
+
+// WithTx 返回绑定到指定事务的仓储。
+func (r *budgetRepository) WithTx(tx *gorm.DB) BudgetRepository {
+	return &budgetRepository{db: tx}
 }
 
 func (r *budgetRepository) Create(item *model.BudgetItem) error {
@@ -77,6 +86,34 @@ func (r *budgetRepository) ListByProjectID(projectID uint) ([]model.BudgetItem, 
 		return nil, fmt.Errorf("list budget items by project %d: %w", projectID, err)
 	}
 	return items, nil
+}
+
+// SumActualByProjectID 汇总项目已用预算（实际花费合计）。
+func (r *budgetRepository) SumActualByProjectID(projectID uint) (float64, error) {
+	var total float64
+	if err := r.db.Model(&model.BudgetItem{}).
+		Where("project_id = ?", projectID).
+		Select("COALESCE(SUM(actual_amount), 0)").
+		Scan(&total).Error; err != nil {
+		return 0, fmt.Errorf("sum actual budget for project %d: %w", projectID, err)
+	}
+	return total, nil
+}
+
+// SumActualByProjectIDForUpdate 加行锁汇总已用预算。
+// 锁定读取始终返回最新已提交数据，保证审批事务在持有项目锁后读到准确余额。
+func (r *budgetRepository) SumActualByProjectIDForUpdate(projectID uint) (float64, error) {
+	var items []model.BudgetItem
+	if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Where("project_id = ?", projectID).
+		Find(&items).Error; err != nil {
+		return 0, fmt.Errorf("lock budget items for project %d: %w", projectID, err)
+	}
+	var total float64
+	for _, item := range items {
+		total += item.ActualAmount
+	}
+	return total, nil
 }
 
 func (r *budgetRepository) Update(item *model.BudgetItem) error {

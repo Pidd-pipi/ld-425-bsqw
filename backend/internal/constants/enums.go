@@ -62,6 +62,13 @@ const (
 	AcceptanceStatusFailed  = "Failed"
 )
 
+// ChangeOrderStatus 变更签证状态。
+const (
+	ChangeOrderStatusPending  = "Pending"
+	ChangeOrderStatusApproved = "Approved"
+	ChangeOrderStatusRejected = "Rejected"
+)
+
 // Role 系统角色。
 const (
 	RoleAdmin          = "Admin"

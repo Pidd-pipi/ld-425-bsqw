@@ -40,19 +40,20 @@ type UpdateProjectStatusRequest struct {
 
 // ProjectDTO 项目展示结构。
 type ProjectDTO struct {
-	ID              uint       `json:"id"`
-	Name            string     `json:"name"`
-	HouseType       string     `json:"house_type"`
-	Area            float64    `json:"area"`
-	DecorStyle      string     `json:"decor_style"`
-	Address         string     `json:"address"`
-	OwnerID         uint       `json:"owner_id"`
-	DesignerID      uint       `json:"designer_id"`
-	ForemanID       uint       `json:"foreman_id"`
-	Status          string     `json:"status"`
-	ContractAmount  float64    `json:"contract_amount"`
-	StartDate       *time.Time `json:"start_date"`
-	ExpectedEndDate *time.Time `json:"expected_end_date"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
+	ID                   uint       `json:"id"`
+	Name                 string     `json:"name"`
+	HouseType            string     `json:"house_type"`
+	Area                 float64    `json:"area"`
+	DecorStyle           string     `json:"decor_style"`
+	Address              string     `json:"address"`
+	OwnerID              uint       `json:"owner_id"`
+	DesignerID           uint       `json:"designer_id"`
+	ForemanID            uint       `json:"foreman_id"`
+	Status               string     `json:"status"`
+	ContractAmount       float64    `json:"contract_amount"`
+	ApprovedChangeAmount float64    `json:"approved_change_amount"`
+	StartDate            *time.Time `json:"start_date"`
+	ExpectedEndDate      *time.Time `json:"expected_end_date"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 }

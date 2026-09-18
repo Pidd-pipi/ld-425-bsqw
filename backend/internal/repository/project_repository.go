@@ -6,6 +6,7 @@ import (
 
 	"github.com/home-renovation/platform/internal/model"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // ErrNotFound 哨兵错误：记录不存在。
@@ -15,15 +16,17 @@ var ErrNotFound = errors.New("record not found")
 type ProjectRepository interface {
 	Create(project *model.RenovationProject) error
 	GetByID(id uint) (*model.RenovationProject, error)
+	GetByIDForUpdate(id uint) (*model.RenovationProject, error)
 	List(filter ProjectFilter, page, pageSize int) ([]model.RenovationProject, int64, error)
 	ListAll() ([]model.RenovationProject, error)
 	Update(project *model.RenovationProject) error
 	Delete(id uint) error
+	WithTx(tx *gorm.DB) ProjectRepository
 }
 
 // ProjectFilter 项目查询过滤条件。
 type ProjectFilter struct {
-	Status string
+	Status  string
 	Keyword string
 }
 
@@ -34,6 +37,11 @@ type projectRepository struct {
 // NewProjectRepository 构造项目仓储。
 func NewProjectRepository(db *gorm.DB) ProjectRepository {
 	return &projectRepository{db: db}
+}
+
+// WithTx 返回绑定到指定事务的仓储。
+func (r *projectRepository) WithTx(tx *gorm.DB) ProjectRepository {
+	return &projectRepository{db: tx}
 }
 
 func (r *projectRepository) Create(project *model.RenovationProject) error {
@@ -50,6 +58,18 @@ func (r *projectRepository) GetByID(id uint) (*model.RenovationProject, error) {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("get project %d: %w", id, err)
+	}
+	return &project, nil
+}
+
+// GetByIDForUpdate 加行锁读取项目，用于事务内串行化预算校验。
+func (r *projectRepository) GetByIDForUpdate(id uint) (*model.RenovationProject, error) {
+	var project model.RenovationProject
+	if err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&project, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("lock project %d: %w", id, err)
 	}
 	return &project, nil
 }

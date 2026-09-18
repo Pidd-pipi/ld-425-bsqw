@@ -87,6 +87,9 @@ docker compose --env-file .env down -v --remove-orphans
 | GET/POST | /api/v1/constructions | 施工列表/创建 | 列表所有角色，创建 Admin/PM |
 | PUT | /api/v1/constructions/:id/status | 施工状态流转 | Admin/Contractor/PM |
 | PUT | /api/v1/constructions/:id/accept | 施工验收 | Admin/Contractor/PM |
+| GET/POST | /api/v1/change-orders | 变更签证列表/提交 | 列表所有角色，提交 Admin/Contractor |
+| GET | /api/v1/change-orders/summary | 项目变更汇总（待审批/已批准金额） | 所有角色 |
+| PUT | /api/v1/change-orders/:id/review | 变更签证审批（通过/驳回） | Admin/PM/Owner |
 | POST | /api/v1/upload | 文件上传 | 登录用户 |
 | GET | /api/v1/audit-logs | 操作日志 | Admin |
 
